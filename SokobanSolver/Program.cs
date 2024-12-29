@@ -12,6 +12,9 @@ namespace SokobanSolver
             Board board = new Board(def.BoardDfinition, def.PlayerPositionX, def.PlayerPositionY);
             Board end = board.SetNext();
             BoardParser.PrintResult(end);
+            Console.WriteLine();
+            Console.WriteLine("Press any key to exit...");
+            Console.ReadKey();
         }
     }
 }

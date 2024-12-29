@@ -6,6 +6,7 @@ b - Box
 & - Player
 
 https://www.cbc.ca/kids/games/play/sokoban
+
 #####
 #&  ##
 #*b@ #
