@@ -1,0 +1,16 @@
+C:\My Data\Projects\SokobanSolver\SokobanSolver\bin\Debug\net5.0\SokobanSolver.exe
+C:\My Data\Projects\SokobanSolver\SokobanSolver\bin\Debug\net5.0\SokobanSolver.deps.json
+C:\My Data\Projects\SokobanSolver\SokobanSolver\bin\Debug\net5.0\SokobanSolver.runtimeconfig.json
+C:\My Data\Projects\SokobanSolver\SokobanSolver\bin\Debug\net5.0\SokobanSolver.runtimeconfig.dev.json
+C:\My Data\Projects\SokobanSolver\SokobanSolver\bin\Debug\net5.0\SokobanSolver.dll
+C:\My Data\Projects\SokobanSolver\SokobanSolver\bin\Debug\net5.0\ref\SokobanSolver.dll
+C:\My Data\Projects\SokobanSolver\SokobanSolver\bin\Debug\net5.0\SokobanSolver.pdb
+C:\My Data\Projects\SokobanSolver\SokobanSolver\obj\Debug\net5.0\SokobanSolver.GeneratedMSBuildEditorConfig.editorconfig
+C:\My Data\Projects\SokobanSolver\SokobanSolver\obj\Debug\net5.0\SokobanSolver.AssemblyInfoInputs.cache
+C:\My Data\Projects\SokobanSolver\SokobanSolver\obj\Debug\net5.0\SokobanSolver.AssemblyInfo.cs
+C:\My Data\Projects\SokobanSolver\SokobanSolver\obj\Debug\net5.0\SokobanSolver.csproj.CoreCompileInputs.cache
+C:\My Data\Projects\SokobanSolver\SokobanSolver\obj\Debug\net5.0\SokobanSolver.dll
+C:\My Data\Projects\SokobanSolver\SokobanSolver\obj\Debug\net5.0\ref\SokobanSolver.dll
+C:\My Data\Projects\SokobanSolver\SokobanSolver\obj\Debug\net5.0\SokobanSolver.pdb
+C:\My Data\Projects\SokobanSolver\SokobanSolver\obj\Debug\net5.0\SokobanSolver.genruntimeconfig.cache
+C:\My Data\Projects\SokobanSolver\SokobanSolver\obj\Debug\net5.0\SokobanSolver.csproj.AssemblyReference.cache

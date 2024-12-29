@@ -1,0 +1,14 @@
+  - Empty space
+# - Wall
+* - Target
+b - Box
+@ - Box on target
+& - Player
+
+https://www.cbc.ca/kids/games/play/sokoban
+#####
+#&  ##
+#*b@ #
+#  # #
+#    #
+######
