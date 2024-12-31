@@ -382,18 +382,14 @@ namespace SokobanSolver
             foreach (Board boardToCompare in allBoardConditions)
             {
                 // Find root element and count of the tree levels to it
-                int stepsCount = 1;
                 Board root = boardToCompare.PreviousBoardCondition;
                 while (root.PreviousBoardCondition != null)
-                {
                     root = root.PreviousBoardCondition;
-                    stepsCount++;
-                }
 
                 // Compare boardToCompare with previous boards in the tree
                 if (root != null)
                 {
-                    bool isMatch = CompareSubTree(root, stepsCount - 1, boardToCompare);
+                    bool isMatch = CompareTreeNodes(root, boardToCompare);
                     if (isMatch)
                         boardConditionsToRemove.Add(boardToCompare);
                 }
@@ -451,22 +447,21 @@ namespace SokobanSolver
         }
 
         /// <summary>
-        /// Compare sub part of tree. Starts from root and go up to treeLevels down.
+        /// Compare nodes of tree with a node. Starts from root and go up to treeLevels down.
         /// </summary>
         /// <param name="root">Tree root node.</param>
-        /// <param name="treeLevels">Tree levels under the root node to be compared.</param>
-        /// <param name="childToCompare">Node of the tree, that have to be compared with the upper nodes.</param>
+        /// <param name="childToCompare">Node that have to be compared with the tree nodes.</param>
         /// <returns>True if some comparison match.</returns>
-        public bool CompareSubTree(Board root, int treeLevels, Board childToCompare)
+        public bool CompareTreeNodes(Board root, Board childToCompare)
         {
             bool isComparisonMatch = root == childToCompare;
             if (isComparisonMatch)
                 return true;
 
-            if (treeLevels > 0 && root.PossibleNextConditions != null)
+            if (root.PossibleNextConditions != null)
                 foreach (Board child in root.PossibleNextConditions)
                 {
-                    isComparisonMatch = CompareSubTree(child, (ushort)(treeLevels - 1), childToCompare);
+                    isComparisonMatch = CompareTreeNodes(child, childToCompare);
                     if (isComparisonMatch)
                         return true;
                 }
