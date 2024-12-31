@@ -426,8 +426,9 @@ namespace SokobanSolver
             ReachableBoxesResult reachable = FindReachableBoxes();
             List<BoxMovement> possibleMovements = FindPossibleMovements(reachable.ReachableBoxes, reachable.ReachablePositions);
             possibleMovements = FilterMovements(possibleMovements);
-            PossibleNextConditions = FindPossibleBoardConditions(possibleMovements);
-            PossibleNextConditions = FilterBoardConditions(PossibleNextConditions);
+            List<Board> nextConditions = FindPossibleBoardConditions(possibleMovements);
+            nextConditions = FilterBoardConditions(nextConditions);
+            PossibleNextConditions = nextConditions;
 
             // If blocked exit without solution
             if (!PossibleNextConditions.Any())
@@ -501,6 +502,16 @@ namespace SokobanSolver
                 if (matchesCount != i + 1)
                     return false;
             }
+
+            // In equal boards the player could be in different cavity (different side of the boxes),
+            // so additional comparison of reachable positions have to be made
+            HashSet<BoardPosition> thisReachablePositions = this.FindReachableBoxes().ReachablePositions;
+            HashSet<BoardPosition> otherReachablePositions = other.FindReachableBoxes().ReachablePositions;
+            if (thisReachablePositions.Count != otherReachablePositions.Count)
+                return false;
+            foreach (BoardPosition thisPosition in thisReachablePositions)
+                if (!otherReachablePositions.Contains(thisPosition))
+                    return false;
 
             return true;
         }
