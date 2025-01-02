@@ -95,7 +95,6 @@ namespace SokobanSolver
         public Board(IEnumerable<BoardPositionContent> boardDefinition, ushort playerXPosition, ushort playerYPosition
             ,BoxMovement boxMovement = null, Board previousBoardCondition = null)
         {
-            // TO DO -> Board and player positions validation
             _board = boardDefinition.ToDictionary(i => new BoardPosition(i.X, i.Y), i => i.PositionType);
             _playerXPosition = playerXPosition;
             _playerYPosition = playerYPosition;
