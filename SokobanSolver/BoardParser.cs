@@ -16,7 +16,7 @@ namespace SokobanSolver
             Console.WriteLine("  - Empty space");
             Console.WriteLine("# - Wall");
             Console.WriteLine("* - Target");
-            Console.WriteLine("b - Box");
+            Console.WriteLine("B - Box");
             Console.WriteLine("@ - Box on target");
             Console.WriteLine("& - Player");
             Console.WriteLine();
@@ -76,7 +76,7 @@ namespace SokobanSolver
                 charCounter = 1;
             } while (!exit);
 
-            return new BoardDrawResult { BoardDfinition = boardDefinition, PlayerPositionX = playerX, PlayerPositionY = playerY };
+            return new BoardDrawResult { BoardDefinition = boardDefinition, PlayerPositionX = playerX, PlayerPositionY = playerY };
         }
 
         /// <summary>

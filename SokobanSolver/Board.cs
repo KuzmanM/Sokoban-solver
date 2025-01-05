@@ -228,69 +228,17 @@ namespace SokobanSolver
 
             foreach (BoxMovement boxMovement in allBoxMovements)
             {
-                // Next positions of the box after the movement
-                BoardPosition upPosition = new BoardPosition(boxMovement.BoxTo.X, (ushort)(boxMovement.BoxTo.Y - 1));
-                BoardPosition downPosition = new BoardPosition(boxMovement.BoxTo.X, (ushort)(boxMovement.BoxTo.Y + 1));
-                BoardPosition leftPosition = new BoardPosition((ushort)(boxMovement.BoxTo.X - 1), boxMovement.BoxTo.Y);
-                BoardPosition rightPosition = new BoardPosition((ushort)(boxMovement.BoxTo.X + 1), boxMovement.BoxTo.Y);
-                BoardPosition upLeftPosition = new BoardPosition((ushort)(boxMovement.BoxTo.X - 1), (ushort)(boxMovement.BoxTo.Y - 1));
-                BoardPosition upRightPosition = new BoardPosition((ushort)(boxMovement.BoxTo.X + 1), (ushort)(boxMovement.BoxTo.Y - 1));
-                BoardPosition downLeftPosition = new BoardPosition((ushort)(boxMovement.BoxTo.X - 1), (ushort)(boxMovement.BoxTo.Y + 1));
-                BoardPosition downRightPosition = new BoardPosition((ushort)(boxMovement.BoxTo.X + 1), (ushort)(boxMovement.BoxTo.Y + 1));
+                NextPositionsTypesResult ts = GetNextPositionsTypes(boxMovement, _board);
 
-                // temporary remove the box from "from position"
-                _board.TryGetValue(boxMovement.BoxFrom, out PositionType boxFromPosType);
-                if(boxFromPosType == PositionType.Box)
-                    _board[boxMovement.BoxFrom] = PositionType.Empty;
-                else
-                    _board[boxMovement.BoxFrom] = PositionType.Target;
-
-                // Check next positions and set their types
-                _board.TryGetValue(boxMovement.BoxTo, out PositionType boxToPosType);
-                _board.TryGetValue(upPosition, out PositionType upType);
-                _board.TryGetValue(downPosition, out PositionType downType);
-                _board.TryGetValue(leftPosition, out PositionType leftType);
-                _board.TryGetValue(rightPosition, out PositionType rightType);
-                if (!_board.TryGetValue(upLeftPosition, out PositionType upLeftType))
-                    upLeftType = PositionType.NotInBoard;
-                if (!_board.TryGetValue(upRightPosition, out PositionType upRightType))
-                    upRightType = PositionType.NotInBoard;
-                if (!_board.TryGetValue(downLeftPosition, out PositionType downLeftType))
-                    downLeftType = PositionType.NotInBoard;
-                if (!_board.TryGetValue(downRightPosition, out PositionType downRightType))
-                    downRightType = PositionType.NotInBoard;
-                
-                // rollback box to its "from position"
-                _board[boxMovement.BoxFrom] = boxFromPosType;
-
-                // Check for positions in walls angle
-                if (
-                    boxToPosType != PositionType.Target
-                    && (upType == PositionType.Wall || downType == PositionType.Wall)
-                    && (leftType == PositionType.Wall || rightType == PositionType.Wall)
-                   )
+                // Check for positions in walls angle (diagonal wall parts are not important)
+                if (IsWallAngle(ts))
                     continue;// not pass the filter
 
-                // Check for positions from square cluster of four boxes
-                if (
-                    boxToPosType != PositionType.Target
+                // Check for square cluster of four elements (boxes and walls)
+                if (IsInSquareCluster( ts))
+                    continue;// not pass the filter
 
-                    && ((
-                           (upType == PositionType.Box || upType == PositionType.Wall || upType == PositionType.BoxOnTarget)
-                        && (
-                               (leftType == PositionType.Box || leftType == PositionType.Wall || leftType == PositionType.BoxOnTarget) && (upLeftType == PositionType.Box || upLeftType == PositionType.Wall || upLeftType == PositionType.BoxOnTarget || upLeftType == PositionType.NotInBoard)
-                            || (rightType == PositionType.Box || rightType == PositionType.Wall || rightType == PositionType.BoxOnTarget) && (upRightType == PositionType.Box || upRightType == PositionType.Wall || upRightType == PositionType.BoxOnTarget || upRightType == PositionType.NotInBoard)
-                           )
-                       )
-
-                    || (
-                           (downType == PositionType.Box || downType == PositionType.Wall || downType == PositionType.BoxOnTarget)
-                        && (
-                               (leftType == PositionType.Box || leftType == PositionType.Wall || leftType == PositionType.BoxOnTarget) && (downLeftType == PositionType.Box || downLeftType == PositionType.Wall || downLeftType == PositionType.BoxOnTarget || downLeftType == PositionType.NotInBoard)
-                            || (rightType == PositionType.Box || rightType == PositionType.Wall || rightType == PositionType.BoxOnTarget) && (downRightType == PositionType.Box || downRightType == PositionType.Wall || downRightType == PositionType.BoxOnTarget || downRightType == PositionType.NotInBoard)
-                           )
-                        ))
-                   )
+                if (IsLayOnDeadEndsWall(boxMovement, ts, _board))
                     continue;// not pass the filter
 
                 result.Add(boxMovement);// pass the filters
@@ -467,6 +415,388 @@ namespace SokobanSolver
 
             return false;
         }
+
+        #region FilterMovements utils
+
+        /// <summary>
+        /// Get all next types of te box destination position.
+        /// </summary>
+        /// <param name="boxMovement">Box movement.</param>
+        /// <param name="board">Entire board definition.</param>
+        /// <returns>All next types of te box destination position.</returns>
+        private static NextPositionsTypesResult GetNextPositionsTypes(BoxMovement boxMovement, Dictionary<BoardPosition, PositionType> board)
+        {
+            NextPositionsTypesResult types = new NextPositionsTypesResult();
+
+            // Next positions of the box after the movement
+            BoardPosition upPosition = new BoardPosition(boxMovement.BoxTo.X, (ushort)(boxMovement.BoxTo.Y - 1));
+            BoardPosition downPosition = new BoardPosition(boxMovement.BoxTo.X, (ushort)(boxMovement.BoxTo.Y + 1));
+            BoardPosition leftPosition = new BoardPosition((ushort)(boxMovement.BoxTo.X - 1), boxMovement.BoxTo.Y);
+            BoardPosition rightPosition = new BoardPosition((ushort)(boxMovement.BoxTo.X + 1), boxMovement.BoxTo.Y);
+            BoardPosition upLeftPosition = new BoardPosition((ushort)(boxMovement.BoxTo.X - 1), (ushort)(boxMovement.BoxTo.Y - 1));
+            BoardPosition upRightPosition = new BoardPosition((ushort)(boxMovement.BoxTo.X + 1), (ushort)(boxMovement.BoxTo.Y - 1));
+            BoardPosition downLeftPosition = new BoardPosition((ushort)(boxMovement.BoxTo.X - 1), (ushort)(boxMovement.BoxTo.Y + 1));
+            BoardPosition downRightPosition = new BoardPosition((ushort)(boxMovement.BoxTo.X + 1), (ushort)(boxMovement.BoxTo.Y + 1));
+
+            // temporary remove the box from "from position"
+            if(!board.TryGetValue(boxMovement.BoxFrom, out PositionType boxFromPosType))
+                throw new ApplicationException("Invalid box movement!");
+            if (boxFromPosType == PositionType.Box)
+                board[boxMovement.BoxFrom] = PositionType.Empty;
+            else
+                board[boxMovement.BoxFrom] = PositionType.Target;
+
+            // Check next positions and set their types
+            board.TryGetValue(boxMovement.BoxTo, out types.BoxToPosType);
+            board.TryGetValue(upPosition, out types.UpType);
+            board.TryGetValue(downPosition, out types.DownType);
+            board.TryGetValue(leftPosition, out types.LeftType);
+            board.TryGetValue(rightPosition, out types.RightType);
+            if (!board.TryGetValue(upLeftPosition, out types.UpLeftType))
+                types.UpLeftType = PositionType.NotInBoard;
+            if (!board.TryGetValue(upRightPosition, out types.UpRightType))
+                types.UpRightType = PositionType.NotInBoard;
+            if (!board.TryGetValue(downLeftPosition, out types.DownLeftType))
+                types.DownLeftType = PositionType.NotInBoard;
+            if (!board.TryGetValue(downRightPosition, out types.DownRightType))
+                types.DownRightType = PositionType.NotInBoard;
+
+            // rollback box to its "from position"
+            board[boxMovement.BoxFrom] = boxFromPosType;
+
+            return types;
+        }
+
+        /// <summary>
+        /// Check is position in walls angle (diagonal wall parts are not important).
+        /// </summary>
+        /// <param name="ts">All next types of te box destination position.</param>
+        /// <returns>True if the position is in walls angle.</returns>
+        private static bool IsWallAngle(NextPositionsTypesResult ts)
+        {
+            return ts.BoxToPosType != PositionType.Target
+                && (ts.UpType == PositionType.Wall || ts.DownType == PositionType.Wall)
+                && (ts.LeftType == PositionType.Wall || ts.RightType == PositionType.Wall);
+        }
+
+        /// <summary>
+        /// Check for square cluster of four elements (boxes and walls).
+        /// </summary>
+        /// <param name="ts">All next types of te box destination position.</param>
+        /// <returns>True if the position is in square cluster of four elements (boxes and walls).</returns>
+        private static bool IsInSquareCluster(NextPositionsTypesResult ts)
+        {
+            return ts.BoxToPosType != PositionType.Target
+
+                && ((
+                        (ts.UpType == PositionType.Box || ts.UpType == PositionType.Wall || ts.UpType == PositionType.BoxOnTarget)
+                    && (
+                            (ts.LeftType == PositionType.Box || ts.LeftType == PositionType.Wall || ts.LeftType == PositionType.BoxOnTarget) && (ts.UpLeftType == PositionType.Box || ts.UpLeftType == PositionType.Wall || ts.UpLeftType == PositionType.BoxOnTarget || ts.UpLeftType == PositionType.NotInBoard)
+                        || (ts.RightType == PositionType.Box || ts.RightType == PositionType.Wall || ts.RightType == PositionType.BoxOnTarget) && (ts.UpRightType == PositionType.Box || ts.UpRightType == PositionType.Wall || ts.UpRightType == PositionType.BoxOnTarget || ts.UpRightType == PositionType.NotInBoard)
+                        )
+                    )
+
+                || (
+                        (ts.DownType == PositionType.Box || ts.DownType == PositionType.Wall || ts.DownType == PositionType.BoxOnTarget)
+                    && (
+                            (ts.LeftType == PositionType.Box || ts.LeftType == PositionType.Wall || ts.LeftType == PositionType.BoxOnTarget) && (ts.DownLeftType == PositionType.Box || ts.DownLeftType == PositionType.Wall || ts.DownLeftType == PositionType.BoxOnTarget || ts.DownLeftType == PositionType.NotInBoard)
+                        || (ts.RightType == PositionType.Box || ts.RightType == PositionType.Wall || ts.RightType == PositionType.BoxOnTarget) && (ts.DownRightType == PositionType.Box || ts.DownRightType == PositionType.Wall || ts.DownRightType == PositionType.BoxOnTarget || ts.DownRightType == PositionType.NotInBoard)
+                        )
+                    ));
+        }
+
+        /// <summary>
+        /// Check if position lying on wall without targets in front of it.
+        /// </summary>
+        /// <param name="boxTo">Box destination position.</param>
+        /// <param name="ts">All next types of te box destination position.</param>
+        /// <param name="board">Entire board definition.</param>
+        /// <returns>True if lying on wall without targets in this line.</returns>
+        private static bool IsLayOnDeadEndsWall(BoxMovement boxMovement, NextPositionsTypesResult ts, Dictionary<BoardPosition, PositionType> board)
+        {
+            bool result = false;
+
+            // If moves is over a target, does not filter it!
+            if(!board.TryGetValue(boxMovement.BoxTo, out PositionType boxToPosType))
+                throw new ApplicationException("Invalid box movement!");
+            if (boxToPosType == PositionType.Target)
+                return false;
+
+            // Temporary remove the box from "from position"
+            if (!board.TryGetValue(boxMovement.BoxFrom, out PositionType boxFromPosType))
+                throw new ApplicationException("Invalid box movement!");
+            if (boxFromPosType == PositionType.Box)
+                board[boxMovement.BoxFrom] = PositionType.Empty;
+            else
+                board[boxMovement.BoxFrom] = PositionType.Target;
+
+            // Up wall
+            if (ts.UpType == PositionType.Wall)
+            {
+                HorizontalStepsToTheWallResult stepsInfo = AnaliseHorizontalStepsInFrontOfWall(boxMovement.BoxTo, board);
+                // not enough targets on the wall
+                result = stepsInfo.LeftBoxesCount + stepsInfo.RightBoxesCount + 1 > stepsInfo.LeftTargetsCount + stepsInfo.RightTargetsCount;
+
+                if(result)
+                {
+                    ushort Y = (ushort)(boxMovement.BoxTo.Y - 1);// wall at up
+                    BoardPosition from = new BoardPosition((ushort)(boxMovement.BoxTo.X - stepsInfo.LeftStepsCount), Y);
+                    BoardPosition to = new BoardPosition((ushort)(boxMovement.BoxTo.X + stepsInfo.RightStepsCount), Y);
+                    result = IsContinuousWall(from, to, board);
+                }
+            }
+
+            // Down wall
+            if (!result && ts.DownType == PositionType.Wall)
+            {
+                HorizontalStepsToTheWallResult stepsInfo = AnaliseHorizontalStepsInFrontOfWall(boxMovement.BoxTo, board);
+                // not enough targets on the wall
+                result = stepsInfo.LeftBoxesCount + stepsInfo.RightBoxesCount + 1 > stepsInfo.LeftTargetsCount + stepsInfo.RightTargetsCount;
+
+                if (result)
+                {
+                    ushort Y = (ushort)(boxMovement.BoxTo.Y + 1);// wall at down
+                    BoardPosition from = new BoardPosition((ushort)(boxMovement.BoxTo.X - stepsInfo.LeftStepsCount), Y);
+                    BoardPosition to = new BoardPosition((ushort)(boxMovement.BoxTo.X + stepsInfo.RightStepsCount), Y);
+                    result = IsContinuousWall(from, to, board);
+                }
+            }
+
+            // Left wall
+            if (!result && ts.LeftType == PositionType.Wall)
+            {
+                VerticalStepsToTheWallResult stepsInfo = AnaliseVerticalStepsInFrontOfWall(boxMovement.BoxTo, board);
+                // not enough targets on the wall
+                result = stepsInfo.UpBoxesCount + stepsInfo.DownBoxesCount + 1 > stepsInfo.UpTargetsCount + stepsInfo.DownTargetsCount;
+
+                if (result)
+                {
+                    ushort X = (ushort)(boxMovement.BoxTo.X - 1);// wall at left
+                    BoardPosition from = new BoardPosition(X, (ushort)(boxMovement.BoxTo.Y - stepsInfo.UpStepsCount));
+                    BoardPosition to = new BoardPosition(X, (ushort)(boxMovement.BoxTo.Y + stepsInfo.DownStepsCount));
+                    result = IsContinuousWall(from, to, board);
+                }
+            }
+
+            // Right wall
+            if (!result && ts.RightType == PositionType.Wall)
+            {
+                VerticalStepsToTheWallResult stepsInfo = AnaliseVerticalStepsInFrontOfWall(boxMovement.BoxTo, board);
+                // not enough targets on the wall
+                result = stepsInfo.UpBoxesCount + stepsInfo.DownBoxesCount + 1 > stepsInfo.UpTargetsCount + stepsInfo.DownTargetsCount;
+
+                if (result)
+                {
+                    ushort X = (ushort)(boxMovement.BoxTo.X + 1);// wall at right
+                    BoardPosition from = new BoardPosition(X, (ushort)(boxMovement.BoxTo.Y - stepsInfo.UpStepsCount));
+                    BoardPosition to = new BoardPosition(X, (ushort)(boxMovement.BoxTo.Y + stepsInfo.DownStepsCount));
+                    result = IsContinuousWall(from, to, board);
+                }
+            }
+
+            // rollback box to its "from position"
+            board[boxMovement.BoxFrom] = boxFromPosType;
+
+            return result;
+        }
+
+        /// <summary>
+        /// Analise content in all positions in front of horizontal wall.
+        /// </summary>
+        /// <param name="position">Box position.</param>
+        /// <param name="board">Entire board definition.</param>
+        /// <returns>Result analysis.</returns>
+        private static HorizontalStepsToTheWallResult AnaliseHorizontalStepsInFrontOfWall(BoardPosition position, Dictionary<BoardPosition, PositionType> board)
+        {
+            HorizontalStepsToTheWallResult result = new HorizontalStepsToTheWallResult();
+            PositionType stepType;
+
+            //Left
+            BoardPosition positionClone = new BoardPosition(position.X, position.Y);
+            do
+            {
+                positionClone.X--;
+                if (!board.TryGetValue(positionClone, out stepType))
+                    stepType = PositionType.NotInBoard;
+                result.LeftStepsCount++;
+                switch (stepType)
+                {
+                    case PositionType.Box:
+                        result.LeftBoxesCount++;
+                        break;
+                    case PositionType.Target:
+                        result.LeftTargetsCount++;
+                        break;
+                    case PositionType.BoxOnTarget:
+                        result.LeftBoxesCount++;
+                        result.LeftTargetsCount++;
+                        break;
+                    case PositionType.Wall:
+                        result.LeftStepsCount--;
+                        break;
+                    case PositionType.NotInBoard:
+                        throw new ApplicationException("Invalid board definition!");
+                }
+            }
+            while (stepType != PositionType.Wall);
+
+            //Right
+            positionClone = new BoardPosition(position.X, position.Y);
+            do
+            {
+                positionClone.X++;
+                if (!board.TryGetValue(positionClone, out stepType))
+                    stepType = PositionType.NotInBoard;
+                result.RightStepsCount++;
+                switch (stepType)
+                {
+                    case PositionType.Box:
+                        result.RightBoxesCount++;
+                        break;
+                    case PositionType.Target:
+                        result.RightTargetsCount++;
+                        break;
+                    case PositionType.BoxOnTarget:
+                        result.RightBoxesCount++;
+                        result.RightTargetsCount++;
+                        break;
+                    case PositionType.Wall:
+                        result.RightStepsCount--;
+                        break;
+                    case PositionType.NotInBoard:
+                        throw new ApplicationException("Invalid board definition!");
+                }
+            }
+            while (stepType != PositionType.Wall);
+
+            return result;
+        }
+
+        /// <summary>
+        /// Analise content in all positions in front of vertical wall.
+        /// </summary>
+        /// <param name="position">Box position.</param>
+        /// <param name="board">Entire board definition.</param>
+        /// <returns>Result analysis.</returns>
+        private static VerticalStepsToTheWallResult AnaliseVerticalStepsInFrontOfWall(BoardPosition position, Dictionary<BoardPosition, PositionType> board)
+        {
+            VerticalStepsToTheWallResult result = new VerticalStepsToTheWallResult();
+            PositionType stepType;
+
+            //Up
+            BoardPosition positionClone = new BoardPosition(position.X, position.Y);
+            do
+            {
+                positionClone.Y--;
+                if (!board.TryGetValue(positionClone, out stepType))
+                    stepType = PositionType.NotInBoard;
+                result.UpStepsCount++;
+                switch (stepType)
+                {
+                    case PositionType.Box:
+                        result.UpBoxesCount++;
+                        break;
+                    case PositionType.Target:
+                        result.UpTargetsCount++;
+                        break;
+                    case PositionType.BoxOnTarget:
+                        result.UpBoxesCount++;
+                        result.UpTargetsCount++;
+                        break;
+                    case PositionType.Wall:
+                        result.UpStepsCount--;
+                        break;
+                    case PositionType.NotInBoard:
+                        throw new ApplicationException("Invalid board definition!");
+                }
+            }
+            while (stepType != PositionType.Wall);
+
+            //Down
+            positionClone = new BoardPosition(position.X, position.Y);
+            do
+            {
+                positionClone.Y++;
+                if (!board.TryGetValue(positionClone, out stepType))
+                    stepType = PositionType.NotInBoard;
+                result.DownStepsCount++;
+                switch (stepType)
+                {
+                    case PositionType.Box:
+                        result.DownBoxesCount++;
+                        break;
+                    case PositionType.Target:
+                        result.DownTargetsCount++;
+                        break;
+                    case PositionType.BoxOnTarget:
+                        result.DownBoxesCount++;
+                        result.DownTargetsCount++;
+                        break;
+                    case PositionType.Wall:
+                        result.DownStepsCount--;
+                        break;
+                    case PositionType.NotInBoard:
+                        throw new ApplicationException("Invalid board definition!");
+                }
+            }
+            while (stepType != PositionType.Wall);
+
+            return result;
+        }
+
+        /// <summary>
+        /// Check horizontal or vertical wall for gaps.
+        /// </summary>
+        /// <param name="from">From coordinate (left - horizontal search or up-vertical search).</param>
+        /// <param name="to">To coordinate (right - horizontal search or down-vertical search).</param>
+        /// <param name="board">Entire board definition.</param>
+        /// <returns>True if the wall is without gaps.</returns>
+        private static bool IsContinuousWall(BoardPosition from, BoardPosition to, Dictionary<BoardPosition, PositionType> board)
+        {
+            PositionType stepType;
+            BoardPosition fromClone = new BoardPosition(from.X, from.Y);
+
+            // Horizontal
+            if (from.Y == to.Y)
+            {
+                if (from.X > to.X)
+                    throw new ArgumentException("From is bigger then To!");
+                do
+                {
+                    if (!board.TryGetValue(fromClone, out stepType))
+                        throw new ApplicationException("Invalid board definition!");
+
+                    if (stepType != PositionType.Wall)
+                        return false;
+
+                    fromClone.X++;// move right
+
+                } while (fromClone.X <= to.X);
+            }
+            // Vertical
+            else if (from.X == to.X)
+            {
+                if (from.Y > to.Y)
+                    throw new ArgumentException("From is bigger then To!");
+                do
+                {
+                    if (!board.TryGetValue(fromClone, out stepType))
+                        throw new ApplicationException("Invalid board definition!");
+
+                    if (stepType != PositionType.Wall)
+                        return false;
+
+                    fromClone.Y++;// move down
+
+                } while (fromClone.Y <= to.Y);
+            }
+            else
+                throw new ApplicationException("Horizontal or vertical line is expected!");
+
+            return true;
+        }
+
+        #endregion
 
         #region Equals and Overrides
 
