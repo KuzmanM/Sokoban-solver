@@ -20,6 +20,7 @@ namespace SokobanSolver
                 // Found the solution
                 Board board = new Board(input.board.BoardDefinition, input.board.PlayerPositionX, input.board.PlayerPositionY);
                 Board end;
+                start = DateTime.Now;
                 if (input.commandParam.Equals("bf", StringComparison.OrdinalIgnoreCase))
                 {
                     Console.WriteLine("breadth-first search");
