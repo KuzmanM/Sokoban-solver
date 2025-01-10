@@ -1,15 +1,16 @@
   - Empty space
 # - Wall
 * - Target
-b - Box
+B - Box
 @ - Box on target
 & - Player
 
 https://www.cbc.ca/kids/games/play/sokoban
 
-#####
-#&  ##
-#*b@ #
-#  # #
-#    #
-######
+  ####
+###  #
+#& *B##
+#   B #
+# #*  #
+#     #
+#######

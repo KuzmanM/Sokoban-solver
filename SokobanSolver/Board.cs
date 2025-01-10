@@ -61,7 +61,7 @@ namespace SokobanSolver
         /// - Have Potential to be solved.
         /// NOTE: In initial board condition, this property is not accurate until SetNext is called.
         /// </summary>
-        public BoardState BoardState { get; set; }
+        public bool IsSolution { get; set; }
 
         /// <summary>
         /// Constructor.
@@ -350,43 +350,81 @@ namespace SokobanSolver
         }
 
         /// <summary>
-        /// Analise the board and find next movements and current board state.
+        /// Returns true if board is in solved condition (there is no boxes out of the target positions).
         /// </summary>
-        /// <returns>Bottom of the tree with potentially solved board which can backtracked for the movements of the solution.</returns>
-        public Board SetNext()
+        /// <returns>True if board is in solved condition.</returns>
+        public bool IsSolved()
         {
-            // Check if this bord is solved (there is no boxes out of the target positions)
-            bool existUnsolved = _board.Values.Any(i => i == PositionType.Box);
-            if (!existUnsolved)
-            {
-                BoardState = BoardState.Solved;
-                return this;
-            }
+            return !_board.Values.Any(i => i == PositionType.Box);
+        }
 
-            BoardState = BoardState.HavePotential;
+        /// <summary>
+        /// Build solution tree and get the shortest solution node if exists.
+        /// NOTE: tree is breadth-first traversal. Worse performance and shortest solution.
+        /// </summary>
+        /// <param name="root">Root of the solution tree - initial state of the board.</param>
+        /// <returns>Solution node (can be backtracked for the movements of the solution) if exists or null.</returns>
+        public static Board BuildBFSolutionTree(Board root)
+        {
+            Queue<Board> parrentNodes = new Queue<Board>();
+            parrentNodes.Enqueue(root);
+            do
+            {
+                // Get next parent
+                Board parent = parrentNodes.Dequeue();
+
+                // Execute chain of analitic methods
+                ReachableBoxesResult reachable = parent.FindReachableBoxes();
+                List<BoxMovement> possibleMovements = parent.FindPossibleMovements(reachable.ReachableBoxes, reachable.ReachablePositions);
+                possibleMovements = parent.FilterMovements(possibleMovements);
+                List<Board> nextConditions = parent.FindPossibleBoardConditions(possibleMovements);
+                nextConditions = parent.FilterBoardConditions(nextConditions);
+                parent.PossibleNextConditions = nextConditions;
+                foreach (Board children in nextConditions)
+                {
+                    if (children.IsSolved())
+                        return children;// Solution node
+                    parrentNodes.Enqueue(children);
+                }
+            } while (parrentNodes.Any());
+
+            return null;// Not found solution
+        }
+
+        /// <summary>
+        /// Analise the board and find next movements and current board state.
+        /// NOTE: tree is depth-first traversal. Better performance and longer solution.
+        /// </summary>
+        /// <param name="root">Root of the solution tree - initial state of the board.</param>
+        /// <returns>Solution node (can be backtracked for the movements of the solution) if exists or null.</returns>
+        public static Board BuildDFSolutionTree(Board root)
+        {
+            // Check if this bord is solved 
+            if (root.IsSolved())
+            {
+                root.IsSolution = true;
+                return root;
+            }
 
             // Execute chain of analitic methods
-            ReachableBoxesResult reachable = FindReachableBoxes();
-            List<BoxMovement> possibleMovements = FindPossibleMovements(reachable.ReachableBoxes, reachable.ReachablePositions);
-            possibleMovements = FilterMovements(possibleMovements);
-            List<Board> nextConditions = FindPossibleBoardConditions(possibleMovements);
-            nextConditions = FilterBoardConditions(nextConditions);
-            PossibleNextConditions = nextConditions;
+            ReachableBoxesResult reachable = root.FindReachableBoxes();
+            List<BoxMovement> possibleMovements = root.FindPossibleMovements(reachable.ReachableBoxes, reachable.ReachablePositions);
+            possibleMovements = root.FilterMovements(possibleMovements);
+            List<Board> nextConditions = root.FindPossibleBoardConditions(possibleMovements);
+            nextConditions = root.FilterBoardConditions(nextConditions);
+            root.PossibleNextConditions = nextConditions;
 
             // If blocked exit without solution
-            if (!PossibleNextConditions.Any())
-            {
-                BoardState = BoardState.Blocked;
-                return this;
-            }
+            if (!nextConditions.Any())
+                return null;
 
             // Process children boards and exit immediately if solution is found.
-            Board result = this;
-            foreach (Board child in PossibleNextConditions)
+            Board result = null;
+            foreach (Board child in root.PossibleNextConditions)
             {
-                result = child.SetNext();
+                result = BuildDFSolutionTree(child);
                 // Exit with the first solution
-                if (result.BoardState == BoardState.Solved)
+                if (result != null && result.IsSolution)
                     break;
             }
 
@@ -867,7 +905,7 @@ namespace SokobanSolver
 
         public override string ToString()
         {
-            string boardState = Enum.GetName(typeof(BoardState), BoardState);
+            string boardState = IsSolution ? "Solution" : string.Empty;
 
             string movement = string.Empty;
             if (BoxMovement != null)

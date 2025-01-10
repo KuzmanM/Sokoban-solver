@@ -30,23 +30,4 @@
         /// </summary>
         BoxOnTarget,
     }
-
-    /// <summary>
-    /// Board conditions.
-    /// </summary>
-    public enum BoardState
-    {
-        /// <summary>
-        /// Not solved and not blocked.
-        /// </summary>
-        HavePotential,
-        /// <summary>
-        /// All boxes are on the targets.
-        /// </summary>
-        Solved,
-        /// <summary>
-        /// One or more boxes are blocked and not on targets.
-        /// </summary>
-        Blocked,
-    }
 }

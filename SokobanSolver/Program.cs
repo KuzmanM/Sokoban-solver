@@ -12,14 +12,26 @@ namespace SokobanSolver
             try
             {
                 // Show description and read user input
-                BoardDrawResult def = BoardParser.ShowLegendAndReadBordDraw();
+                (BoardDrawResult board, string commandParam) input = BoardParser.ShowLegendAndReadBordDraw();
 
                 // Validate user input
-                BoardParser.Vlidate(def.BoardDefinition, def.PlayerPositionX, def.PlayerPositionY);
+                BoardParser.Vlidate(input.board.BoardDefinition, input.board.PlayerPositionX, input.board.PlayerPositionY);
 
                 // Found the solution
-                Board board = new Board(def.BoardDefinition, def.PlayerPositionX, def.PlayerPositionY);
-                Board end = board.SetNext();
+                Board board = new Board(input.board.BoardDefinition, input.board.PlayerPositionX, input.board.PlayerPositionY);
+                Board end;
+                if (input.commandParam.Equals("bf", StringComparison.OrdinalIgnoreCase))
+                {
+                    Console.WriteLine("breadth-first search");
+                    Console.WriteLine();
+                    end = Board.BuildBFSolutionTree(board);
+                }
+                else
+                {
+                    Console.WriteLine("depth-first search");
+                    Console.WriteLine();
+                    end = Board.BuildDFSolutionTree(board);
+                }
 
                 // Print the result
                 BoardParser.PrintResult(end);
@@ -32,14 +44,13 @@ namespace SokobanSolver
                 Console.WriteLine();
             }
             
-            TimeSpan t = (DateTime.Now - start);
-            if (t.TotalSeconds < 1000)
-                Console.WriteLine($"Time: {Math.Round(t.TotalSeconds, 1)} seconds");
-            else if (t.TotalMinutes < 500)
-                Console.WriteLine($"Time: {Math.Round(t.TotalMinutes, 2)} minutes");
-            else
-                Console.WriteLine($"Time: {Math.Round(t.TotalHours, 3)} hours");
-
+            double totalSeconds = (DateTime.Now - start).TotalSeconds;
+            uint allSeconds = Convert.ToUInt32(totalSeconds);
+            uint allMinutes = allSeconds / 60;
+            uint secondsPart = allSeconds % 60;
+            uint hoursPart = allMinutes / 60;
+            uint minutesPart = allMinutes % 60;
+            Console.WriteLine($"Time (h:min:sec): {hoursPart:D2}:{minutesPart:D2}:{secondsPart:D2}");
             Console.WriteLine("Press any key to exit...");
             Console.ReadKey();
         }

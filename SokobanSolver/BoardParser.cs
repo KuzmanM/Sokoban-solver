@@ -11,7 +11,7 @@ namespace SokobanSolver
         /// Show instructions and read board.
         /// </summary>
         /// <returns>Board positions and player coordinates.</returns>
-        public static BoardDrawResult ShowLegendAndReadBordDraw()
+        public static (BoardDrawResult board, string commandParam) ShowLegendAndReadBordDraw()
         {
             Console.WriteLine("  - Empty space");
             Console.WriteLine("# - Wall");
@@ -20,12 +20,18 @@ namespace SokobanSolver
             Console.WriteLine("@ - Box on target");
             Console.WriteLine("& - Player");
             Console.WriteLine();
-            Console.WriteLine("\"Draw\" the board and write 'go' to complete!");
-            Console.WriteLine("\"Draw\" will be converted to coordinates with 1 based index. Zero point is upper left point of the Draw.");
-            Console.WriteLine("Result movments are also 1 based indexes!");
+            Console.WriteLine("Draw the board with the characters above and write \"go\" to complete!");
+            Console.WriteLine("go params:");
+            Console.WriteLine("df - depth-first search (default). Better performance but solution with more moves.");
+            Console.WriteLine("bf - breadth-first search. Shortest solution but worse performance.");
+            Console.WriteLine();
+            Console.WriteLine("NOTE:");
+            Console.WriteLine("The board draw will be converted to coordinates with one based index. Coordinate origin is upper left point of the rectangle enclosing the board.");
+            Console.WriteLine("Moves of the result solution are also presented with one based indexes and upper left coordinate origin!");
             Console.WriteLine();
 
             bool exit;
+            string line;
             ushort charCounter = 1;//X
             ushort lineCounter = 1;//Y
             List<BoardPositionContent> boardDefinition = new List<BoardPositionContent>();
@@ -33,8 +39,8 @@ namespace SokobanSolver
             ushort playerY = 0;
             do
             {
-                string line = Console.ReadLine().TrimEnd();
-                exit = line.Trim().Equals("go", StringComparison.OrdinalIgnoreCase);
+                line = Console.ReadLine().TrimEnd();
+                exit = line.Trim().StartsWith("go", StringComparison.OrdinalIgnoreCase);
                 if (!exit)
                 {
                     //NOTE: Leading spaces (before first character), have to be replaced with Not In Board.
@@ -76,7 +82,9 @@ namespace SokobanSolver
                 charCounter = 1;
             } while (!exit);
 
-            return new BoardDrawResult { BoardDefinition = boardDefinition, PlayerPositionX = playerX, PlayerPositionY = playerY };
+            string exitCommandParam = line.Replace("go", string.Empty, StringComparison.OrdinalIgnoreCase).Trim();
+            BoardDrawResult board = new BoardDrawResult { BoardDefinition = boardDefinition, PlayerPositionX = playerX, PlayerPositionY = playerY };
+            return (board, exitCommandParam);
         }
 
         /// <summary>
@@ -85,28 +93,27 @@ namespace SokobanSolver
         /// <param name="end">Last node of solving sequence.</param>
         public static void PrintResult(Board end)
         {
-            if (end.BoardState == BoardState.Solved)
-                Console.WriteLine($"***** Solved *****");
-            else
+            if (end == null)
+            {
                 Console.WriteLine($"***** Solution not found *****");
+                return;
+            }
 
+            Console.WriteLine($"***** Solved *****");
             // Print movements
             List<BoxMovement> movements = new List<BoxMovement>();
-            if (end.BoardState == BoardState.Solved)
+            Board currentBoard = end;
+            do
             {
-                Board currentBoard = end;
-                do
-                {
-                    if (currentBoard.BoxMovement != null)
-                        movements.Add(currentBoard.BoxMovement);
+                if (currentBoard.BoxMovement != null)
+                    movements.Add(currentBoard.BoxMovement);
 
-                    currentBoard = currentBoard.PreviousBoardCondition;
-                } while (currentBoard != null);
-                movements.Reverse();
+                currentBoard = currentBoard.PreviousBoardCondition;
+            } while (currentBoard != null);
+            movements.Reverse();
 
-                for (int i = 0; i < movements.Count; i++)
-                    Console.WriteLine($"{i+1}. {movements[i]}");
-            }
+            for (int i = 0; i < movements.Count; i++)
+                Console.WriteLine($"{i + 1}. {movements[i]}");
         }
 
         /// <summary>
